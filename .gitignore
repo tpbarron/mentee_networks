@@ -1,5 +1,5 @@
 # Data
-MNIST_data
+MNIST_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
