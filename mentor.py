@@ -11,15 +11,12 @@ K.set_session(sess)
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
-img = tf.placeholder(tf.float32, shape=(None, 784))
-labels = tf.placeholder(tf.float32, shape=(None, 10))
+mentor_model = models.build_mentor_model_sequential()
+mentor_preds = mentor_model(models.img)
 
-mentor_model = models.build_mentor_model()
-mentor_preds = mentor_model(img)
+loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
 
-loss = tf.reduce_mean(categorical_crossentropy(labels, mentor_preds))
-
-acc_value = categorical_accuracy(labels, mentor_preds)
+acc_value = categorical_accuracy(models.labels, mentor_preds)
 train_step = tf.train.AdamOptimizer().minimize(loss)
 sess.run(tf.initialize_all_variables())
 
@@ -28,10 +25,10 @@ with sess.as_default():
         if i % 100 == 0:
             print "Step: ", i
         batch = mnist.train.next_batch(50)
-        train_step.run(feed_dict={img: batch[0],
-                                  labels: batch[1]})
+        train_step.run(feed_dict={models.img: batch[0],
+                                  models.labels: batch[1]})
 
-    print acc_value.eval(feed_dict={img: mnist.test.images,
-                                    labels: mnist.test.labels})
+    print acc_value.eval(feed_dict={models.img: mnist.test.images,
+                                    models.labels: mnist.test.labels})
 
 mentor_model.save("mentor.h5")
