@@ -16,7 +16,7 @@ def compute_alpha(epoch):
     """
     Compute alpha based on itr t
     """
-    return 0.015
+    return 0.0015
 
 
 def compute_beta(epoch):
@@ -37,8 +37,17 @@ def compute_gamma(epoch):
 sess = tf.Session()
 K.set_session(sess)
 
+# Some parameters
+num_iterations = 1000
+batch_size = 100
+
+# list of layer probes between the mentor and mentee; 0-indexed
+probes = [
+    (0, 0)
+]
+
 mentee_model = models.build_mentee_model_sequential()
-mentee_preds = mentee_model(models.img)
+mentee_preds = mentee_model.output
 
 # tensorflow optimizer and gradients wrt loss
 # NOTE: order is important here. If these lines are moved below
@@ -52,41 +61,32 @@ apply_grads_and_vars = opt.apply_gradients(labels_grads_and_vars)
 print ("Label grads and vars ops: ", len(labels_grads_and_vars))
 
 # build mentor model
-mentor_model = models.build_mentor_model_sequential(load=False)
-mentor_preds = mentor_model(models.img)
+mentor_model = models.build_mentor_model_sequential(load=True)
+mentor_preds = mentor_model.output
 
 # define a loss function between the hidden layer activations of each network
-# TODO: modify this so that it can handle different sizes of layers
-# TODO: loss needs to be defined between activations NOT weights
-# TODO: this works because there are only two layers, not sure how to get activation of ith hidden layer not first or last
-#       Try the K.function([...])
-#       I think it will work to use:
-#           mentor_preds_li = K.function([models.img], [mentor_model.layers[i].output]).outputs[0]
-#           mentee_preds_li = K.function([models.img], [mentee_model.layers[i].output]).outputs[0]
+mentor_l1_preds = K.function([models.img], [mentor_model.layers[0].output]).outputs[0]
+mentee_l1_preds = K.function([models.img], [mentee_model.layers[0].output]).outputs[0]
 
-mentor_l1_preds = mentor_model.layers[0](models.img)
-mentee_l1_preds = mentee_model.layers[0](models.img)
+# Ok let's assume that the mentor will always be >= in size than the mentee
+# then want to consider the error along the first n value where n is the min(mentor, mentee)
+# use slice to ignore irrelevant outputs
 probe_l1_loss = tf.sqrt(
                     tf.reduce_mean(
-                        tf.square(
-                            tf.sub(
-                                mentor_l1_preds,
-                                mentee_l1_preds
-                            )
+                        tf.squared_difference(
+                            tf.slice(mentor_l1_preds, [0, 0], [batch_size, mentee_model.layers[0].output_dim]),
+                            tf.slice(mentee_l1_preds, [0, 0], [batch_size, mentee_model.layers[0].output_dim])
                         )
                     )
                 )
-
 probe_l1_grads = tf.gradients(probe_l1_loss, [mentee_model.layers[0].W, mentee_model.layers[0].b])
 print (probe_l1_grads)
 
 probe_out_loss = tf.sqrt(
                     tf.reduce_mean(
-                        tf.square(
-                            tf.sub(
-                                mentor_preds,
-                                mentee_preds,
-                            )
+                        tf.squared_difference(
+                            mentor_preds,
+                            mentee_preds
                         )
                     )
                 )
@@ -97,15 +97,14 @@ acc_value = categorical_accuracy(models.labels, mentee_preds)
 
 sess.run(tf.initialize_all_variables())
 
-num_iterations = 1000
 with sess.as_default():
     for i in range(num_iterations):
         if i % 100 == 0:
             print ("Accuracy at step: ", i, acc_value.eval(feed_dict={models.img: mnist.test.images,
                                             models.labels: mnist.test.labels}),
-                                            epochs: ", mnist,train.epochs_completed)
+                                            "epochs: ", mnist.train.epochs_completed)
 
-        batch = mnist.train.next_batch(100)
+        batch = mnist.train.next_batch(batch_size)
         # now compute gradients of mentee
         # compute activations of mentor
         # apply update rule to grads
@@ -115,13 +114,9 @@ with sess.as_default():
         probe_l1_gradients = [sess.run(g, feed_dict={models.img: batch[0], models.labels: batch[1]}) for g in probe_l1_grads]
         probe_out_gradients = [sess.run(g, feed_dict={models.img: batch[0], models.labels: batch[1]}) for g in probe_out_grads]
 
-        # print (gradients[0])
-        # print (len(probe_l1_gradients))
-        # print (len(probe_out_gradients))
-
-        a = compute_alpha(0)
-        b = compute_beta(0)
-        g = compute_gamma(0)
+        a = compute_alpha(i)
+        b = compute_beta(i)
+        g = compute_gamma(i)
 
         # do weighted update of grads and call apply gradients
         # TODO: generalize this
@@ -135,6 +130,7 @@ with sess.as_default():
         #    probe_layer_gradients[i] corresponds to the correct layer and probe_layer_gradients
         #    for the last two elements (aka the last layer) is 0
         # If this update can be made into a tensorflow op, then can just run train_step
+
         gradients[0] = a*gradients[0] + b*probe_l1_gradients[0] + g*probe_out_gradients[0]
         gradients[1] = a*gradients[1] + b*probe_l1_gradients[1] + g*probe_out_gradients[1]
         gradients[2] = a*gradients[2] + g*probe_out_gradients[2]
@@ -143,22 +139,7 @@ with sess.as_default():
         grads_n_vars = [(gradients[i], labels_grads_and_vars[i][1]) for i in range(len(labels_grads_and_vars))]
         sess.run(opt.apply_gradients(grads_n_vars))
 
-        # train_step.run(feed_dict={models.img: batch[0],
-        #                           models.labels: batch[1]})
-
     print (acc_value.eval(feed_dict={models.img: mnist.test.images,
                                     models.labels: mnist.test.labels}))
 
 mentee_model.save("mentee.h5")
-
-
-# opt = tf.train.AdamOptimizer()
-# # Compute the gradients for a list of variables.
-# grads_and_vars = opt.compute_gradients(loss)
-#
-# # grads_and_vars is a list of tuples (gradient, variable).  Do whatever you
-# # need to the 'gradient' part, for example cap them, etc.
-# #capped_grads_and_vars = [(MyCapper(gv[0]), gv[1]) for gv in grads_and_vars]
-#
-# # Ask the optimizer to apply the capped gradients.
-# opt.apply_gradients(capped_grads_and_vars)
