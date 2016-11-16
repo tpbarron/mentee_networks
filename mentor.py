@@ -13,7 +13,7 @@ K.set_session(sess)
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
-mentor_model = models.build_mentor_model_sequential()
+mentor_model = models.build_mentor_model_sequential_conv()
 mentor_preds = mentor_model.output
 
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
@@ -25,12 +25,14 @@ sess.run(tf.initialize_all_variables())
 with sess.as_default():
     for i in range(2000):
         if i % 100 == 0:
-            print ("Step: ", i)
-        batch = mnist.train.next_batch(50)
+            acc = acc_value.eval(feed_dict={models.img: mnist.test.images,
+                                            models.labels: mnist.test.labels})
+            print ("Step: ", i, acc)
+        batch = mnist.train.next_batch(10)
         train_step.run(feed_dict={models.img: batch[0],
                                   models.labels: batch[1]})
 
     print (acc_value.eval(feed_dict={models.img: mnist.test.images,
                                     models.labels: mnist.test.labels}))
 
-mentor_model.save("mentor.h5")
+mentor_model.save("mentor_conv.h5")

@@ -32,6 +32,9 @@ def get_gradient_ops(probes, mentee, mentor, temperature):
     for p in probes:
         mentor_layer_index, mentee_layer_index = p
 
+        assert mentor_layer_index < (len(mentor.layers) - 1)
+        assert mentee_layer_index < (len(mentee.layers) - 1)
+
         # define a loss function between the hidden layer activations of each network
         mentor_layer_preds = K.function([models.img], [mentor_model.layers[mentor_layer_index].output]).outputs[0]
         mentee_layer_preds = K.function([models.img], [mentee_model.layers[mentee_layer_index].output]).outputs[0]
@@ -50,9 +53,8 @@ def get_gradient_ops(probes, mentee, mentor, temperature):
         probe_layer_grads = tf.gradients(probe_layer_loss, mentee_model.trainable_weights)
         probe_gradients.append(probe_layer_grads)
 
-    # added all probes
-    # now add the output softmax probe
-    # the output of the last layer before the sotmax
+    # added all probes, now add the output softmax probe
+    # use the output of the last layer before the sotfmax
     mentor_out_preds = K.function([models.img], [mentor_model.layers[-2].output]).outputs[0]
     mentee_out_preds = K.function([models.img], [mentee_model.layers[-2].output]).outputs[0]
 
@@ -60,8 +62,8 @@ def get_gradient_ops(probes, mentee, mentor, temperature):
     probe_out_loss = tf.sqrt(
                         tf.reduce_mean(
                             tf.squared_difference(
-                                tf.div(tf.exp(tf.div(mentor_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentor_out_preds, temperature)))), #mentor_out_preds,
-                                tf.div(tf.exp(tf.div(mentee_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentee_out_preds, temperature)))) #mentee_out_preds
+                                tf.div(tf.exp(tf.div(mentor_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentor_out_preds, temperature)))),
+                                tf.div(tf.exp(tf.div(mentee_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentee_out_preds, temperature))))
                             )
                         )
                     )
@@ -121,8 +123,7 @@ for i in range(num_iterations):
     if i % 100 == 0:
         print ("Mentee accuracy at step: ", i, sess.run(acc_value_mentee, feed_dict={models.img: mnist.test.images,
                                         models.labels: mnist.test.labels}),
-                                        "epochs: ", mnist.train.epochs_completed)
-        print ("Saving mentor")
+                                        "epochs: ", mnist.train.epochs_completed, ", saving model")
         mentee_model.save("mentee.h5")
 
     batch = mnist.train.next_batch(batch_size)
