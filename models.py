@@ -1,5 +1,4 @@
 import tensorflow as tf
-from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense
 from temperature_softmax import TemperatureSoftmax
@@ -19,8 +18,13 @@ def build_mentor_model_sequential(load=False):
     mentor_model.add(l1)
     mentor_model.add(Dense(10, name='mentor_dense_2'))
     mentor_model.add(TemperatureSoftmax(0.99))
+
+    sess = tf.Session()
+    w_init = mentor_model.layers[0].W
+    print (w_init)
     if load:
         mentor_model.load_weights('mentor.h5')
+        w_post = mentor_model.layers[0].W
     return mentor_model
 
 
