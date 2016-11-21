@@ -6,6 +6,8 @@ from keras import backend as K
 from keras.objectives import categorical_crossentropy
 from keras.metrics import categorical_accuracy
 import models
+import learning_rates
+import os
 
 # initialize the tensorflow session
 sess = tf.Session()
@@ -19,8 +21,10 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_C
 img_input = models.img_conv if USE_CONV else models.img_dense
 
 # Some parameters
-num_iterations = 1000
-batch_size = 100
+dataset_config = ''
+num_epochs= 10
+#num_iterations = 1000
+batch_size = 50
 temperature = 0.9
 # list of probes between the mentor and mentee by layer; 0-indexed
 # the output probe does not need to be specified
@@ -114,26 +118,9 @@ def get_gradient_ops(probes, mentee, mentor, img_input, emperature):
     return probe_gradients
 
 
-def compute_alpha(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.001
-
-
-def compute_beta(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.1
-
-
-def compute_gamma(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.1
-
+##########################
+##########################
+#TODO: This section needs organization
 
 mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
 mentee_preds = mentee_model.output
@@ -159,59 +146,139 @@ acc_value_mentor = categorical_accuracy(models.labels, mentor_preds)
 acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 probe_gradients = get_gradient_ops(probes, mentee_model, mentor_model, img_input, temperature)
-print ("Probe gradients: ", probe_gradients)
 
-for i in range(num_iterations):
-    if i % 100 == 0:
-        print ("Mentee accuracy at step: ", i, sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,
-                                        models.labels: mnist.test.labels}),
-                                        "epochs: ", mnist.train.epochs_completed, ", saving model")
+
+##################
+##################
+
+
+def train_mentee(dataset_config, mentee_mode):
+    output =[]
+
+    #TODO: please check if I initialize the weights for the mentee network the following line correctly -- not affecting the mentor network
+    sess.run(tf.initialize_all_variables())
+
+    mnist.train._index_in_epoch = 0 #re-read from the begining of the dataset
+
+    if dataset_config == 'mnist-1':
+        total_batch = int(10 / batch_size)
+    elif dataset_config == 'mnist-10':
+        total_batch = int(100 / batch_size)
+    elif dataset_config == 'mnist-50':
+        total_batch = int(500 / batch_size)
+    elif dataset_config == 'mnist-100':
+        total_batch = int(1000 / batch_size)
+    elif dataset_config == 'mnist-250':
+        total_batch = int(2500 / batch_size)
+    elif dataset_config == 'mnist-500':
+        total_batch = int(5000 / batch_size)
+    else:
+        print ("the dataset configuration is undefined")
+        import sys
+        sys.exit()
+
+
+    print ("dataset configuration: ", dataset_config)
+
+    print ("total number of batches: ", total_batch)
+
+    print ("Mentee network mode ", mentee_mode)
+
+    for _epoch in range(num_epochs):
+
+        mnist.train._index_in_epoch = 0 #re-read from the begining of the dataset
+        acc = sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images, models.labels: mnist.test.labels})
+
+        output.append("epoch: "+ str(_epoch) + ", accuracy: " + str(acc))
+        print("Mentee accuracy at epoch: ", _epoch, acc,
+              "epochs: ", _epoch, ", saving model")
+
         model_name = "mentee_conv.h5" if USE_CONV else "mentee_dense.h5"
-        mentee_model.save(model_name)
 
-    batch = mnist.train.next_batch(batch_size)
+        #mentee_model.save(model_name)
 
-    # Compute all needed gradients
-    gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g,v in labels_grads_and_vars]
+        #compute the learning-rates
 
-    # compute all probe (w/o the softmax probe)
-    computed_probe_gradients = []
-    for i in range(len(probe_gradients)-1):
-        probe_grad = []
-        probe_grad_op = probe_gradients[i]
-        for g in probe_grad_op:
-            if g is not None:
-                probe_grad.append(sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}))
-            else:
-                probe_grad.append(None)
-        computed_probe_gradients.append(probe_grad)
-
-    # compute gradients for softmax probe
-    computed_probe_out_gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g in probe_gradients[-1]]
-
-    a = compute_alpha(i)
-    b = compute_beta(i)
-    g = compute_gamma(i)
-
-    for i in range(len(gradients)):
-        # set gradients for variable i
-        gradients[i] = a*gradients[i]
-        # sum the probes
-        for j in range(len(computed_probe_gradients)):
-            probe_grad = computed_probe_gradients[j]
-            if (probe_grad[i] is not None): # if there is a gradient for probe j for layer i
-                gradients[i] += b*probe_grad[i]
-
-        # add the output softmax probe
-        gradients[i] += computed_probe_out_gradients[i]
-
-    # apply grads
-    grads_n_vars = [(gradients[i], labels_grads_and_vars[i][1]) for i in range(len(labels_grads_and_vars))]
-    sess.run(opt.apply_gradients(grads_n_vars))
+        alpha = 100 * learning_rates.compute_alpha(_epoch, mentee_mode)
+        beta = 100 * learning_rates.compute_beta(_epoch, mentee_mode)
+        gamma = 100 * learning_rates.compute_gamma(_epoch, mentee_mode)
 
 
-print (sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,
-                                models.labels: mnist.test.labels}))
+        for i in range(total_batch):
+            #print("alpha: ", alpha, ", beta: ", beta, ", gamma: ", gamma)
+            batch = mnist.train.next_batch(batch_size)
+            #print ("batch ", batch[1])
 
-model_name = "mentee_conv.h5" if USE_CONV else "mentee_dense.h5"
-mentee_model.save(model_name)
+
+            # Compute all needed gradients
+            gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g,v in labels_grads_and_vars]
+
+            # compute all probe (w/o the softmax probe)
+            computed_probe_gradients = []
+
+            for i2 in range(len(probe_gradients)-1):
+                probe_grad = []
+                probe_grad_op = probe_gradients[i2]
+                for g in probe_grad_op:
+                    if g is not None:
+                        probe_grad.append(sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}))
+                    else:
+                        probe_grad.append(None)
+                computed_probe_gradients.append(probe_grad)
+
+            # compute gradients for softmax probe
+            computed_probe_out_gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g in probe_gradients[-1]]
+
+
+
+            for i3 in range(len(gradients)):
+                # set gradients for variable i
+                gradients[i3] = alpha*gradients[i3]
+                # sum the probes
+                for j in range(len(computed_probe_gradients)):
+                    probe_grad = computed_probe_gradients[j]
+                    if (probe_grad[i3] is not None): # if there is a gradient for probe j for layer i
+                        gradients[i3] += beta *probe_grad[i3]
+
+                # add the output softmax probe
+                gradients[i3] += gamma *computed_probe_out_gradients[i3]
+
+            # apply grads
+            grads_n_vars = [(gradients[i4], labels_grads_and_vars[i4][1]) for i4 in range(len(labels_grads_and_vars))]
+            sess.run(opt.apply_gradients(grads_n_vars))
+
+    acc= sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,
+                                    models.labels: mnist.test.labels})
+    output.append("epoch: " + str(_epoch+1) + ", accuracy: " + str(acc))
+    #print (acc)
+
+    model_name = "mentee_conv.h5" if USE_CONV else "mentee_dense.h5"
+    #mentee_model.save(model_name)
+    return output
+
+if __name__ == "__main__":
+
+    for i in ("adamant", "obedient", "independent"):
+        output = []
+        file_name= (i + "_mentee_mode.txt")
+        print (file_name)
+        f = open(file_name, 'w')
+        f.write(("Parameters: \n"
+                 + "num_epochs: 10" + ", batch_size: 50\n" ))
+
+
+
+        for j in ("mnist-1", "mnist-10", "mnist-50", "mnist-100", "mnist-250", "mnist-500"):
+
+            #mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
+            output= train_mentee(dataset_config=j, mentee_mode=i)
+            f.write(("\ndataset configuration: " + j + "\n"))
+            for line in output:
+                f.write(str(line))
+                f.write("\n")
+
+
+
+
+            #print ("The mentee accuracy for mentee mode: ", i, "and dataset configuration: ", j ," is : %", 100 * acc)
+        f.close()

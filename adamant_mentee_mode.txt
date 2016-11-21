@@ -1,0 +1,67 @@
+Parameters: 
+num_epochs: 10, batch_size: 50
+
+dataset configuration: mnist-1
+epoch: 0, accuracy: 0.1037
+epoch: 1, accuracy: 0.1037
+epoch: 2, accuracy: 0.1037
+epoch: 3, accuracy: 0.1037
+epoch: 4, accuracy: 0.1037
+epoch: 5, accuracy: 0.1037
+epoch: 6, accuracy: 0.1037
+epoch: 7, accuracy: 0.1037
+epoch: 8, accuracy: 0.1037
+epoch: 9, accuracy: 0.1037
+epoch: 10, accuracy: 0.1037
+
+dataset configuration: mnist-10
+epoch: 0, accuracy: 0.072
+epoch: 1, accuracy: 0.0963
+epoch: 2, accuracy: 0.1497
+epoch: 3, accuracy: 0.1975
+epoch: 4, accuracy: 0.2253
+epoch: 5, accuracy: 0.2404
+epoch: 6, accuracy: 0.2543
+epoch: 7, accuracy: 0.2653
+epoch: 8, accuracy: 0.2723
+epoch: 9, accuracy: 0.2809
+epoch: 10, accuracy: 0.2882
+
+dataset configuration: mnist-50
+epoch: 0, accuracy: 0.1517
+epoch: 1, accuracy: 0.32
+epoch: 2, accuracy: 0.3756
+epoch: 3, accuracy: 0.5775
+epoch: 4, accuracy: 0.7293
+epoch: 5, accuracy: 0.7853
+epoch: 6, accuracy: 0.8097
+epoch: 7, accuracy: 0.8209
+epoch: 8, accuracy: 0.8318
+epoch: 9, accuracy: 0.8341
+epoch: 10, accuracy: 0.8367
+
+dataset configuration: mnist-100
+epoch: 0, accuracy: 0.0775
+epoch: 1, accuracy: 0.3351
+epoch: 2, accuracy: 0.5134
+epoch: 3, accuracy: 0.7374
+epoch: 4, accuracy: 0.7939
+epoch: 5, accuracy: 0.8356
+epoch: 6, accuracy: 0.854
+epoch: 7, accuracy: 0.8623
+epoch: 8, accuracy: 0.8652
+epoch: 9, accuracy: 0.8673
+epoch: 10, accuracy: 0.8693
+
+dataset configuration: mnist-250
+epoch: 0, accuracy: 0.1311
+epoch: 1, accuracy: 0.8013
+epoch: 2, accuracy: 0.8718
+epoch: 3, accuracy: 0.8877
+epoch: 4, accuracy: 0.9007
+epoch: 5, accuracy: 0.9056
+epoch: 6, accuracy: 0.9076
+epoch: 7, accuracy: 0.9107
+epoch: 8, accuracy: 0.912
+epoch: 9, accuracy: 0.9131
+epoch: 10, accuracy: 0.9142
