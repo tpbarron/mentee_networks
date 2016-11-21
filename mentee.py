@@ -197,11 +197,11 @@ def train_mentee(dataset_config, mentee_mode):
 
         #mentee_model.save(model_name)
 
-        #compute the learning-rates
+        #compute the learning rates.
 
-        alpha = 100 * learning_rates.compute_alpha(_epoch, mentee_mode)
-        beta = 100 * learning_rates.compute_beta(_epoch, mentee_mode)
-        gamma = 100 * learning_rates.compute_gamma(_epoch, mentee_mode)
+        alpha = 1000 * learning_rates.compute_eat_alpha(_epoch, mentee_mode)
+        beta = 1000 * learning_rates.compute_eta_beta(_epoch, mentee_mode)
+        gamma = 1000 * learning_rates.compute_eta_gamma(_epoch, mentee_mode)
 
 
         for i in range(total_batch):

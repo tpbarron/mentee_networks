@@ -19,7 +19,7 @@ def compute_n(i):
     return n
 
 
-def compute_alpha(i, mode):
+def compute_eta_alpha(i, mode):
     alpha = 0
     # obedient
     if mode == "obedient":
@@ -45,7 +45,7 @@ def compute_alpha(i, mode):
     return alpha
 
 
-def compute_beta(i, mode):
+def compute_eta_beta(i, mode):
     # obedient
     beta = 0
     if mode == "obedient":
@@ -62,7 +62,7 @@ def compute_beta(i, mode):
     return beta
 
 
-def compute_gamma(i, mode):
+def compute_eta_gamma(i, mode):
     # obedient
     gamma = 0
     if mode == "obedient":
@@ -99,9 +99,9 @@ def plot_learning_rates():
 
     for i in range(200):
         n = compute_n(i)
-        alpha = compute_alpha(i, 'obedient')
-        beta = compute_beta(i, 'obedient')
-        gamma = compute_gamma(i, 'obedient')
+        alpha = compute_eta_alpha(i, 'obedient')
+        beta = compute_eta_beta(i, 'obedient')
+        gamma = compute_eta_gamma(i, 'obedient')
 
         n_list.append(n)
         alpha_list_obedient.append(alpha)
@@ -109,9 +109,9 @@ def plot_learning_rates():
         gamma_list_obedient.append(gamma)
 
         n_list.append(n)
-        alpha_list_adamant.append(compute_alpha(i, 'adamant'))
-        beta_list_adamant.append(compute_beta(i, 'adamant'))
-        gamma_list_adamant.append(compute_gamma(i, 'adamant'))
+        alpha_list_adamant.append(compute_eta_alpha(i, 'adamant'))
+        beta_list_adamant.append(compute_eta_beta(i, 'adamant'))
+        gamma_list_adamant.append(compute_eta_gamma(i, 'adamant'))
 
 
         # print ("i = ", i, " and alpha= ", float(alpha))
