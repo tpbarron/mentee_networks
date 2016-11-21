@@ -6,6 +6,7 @@ from keras import backend as K
 from keras.objectives import categorical_crossentropy
 from keras.metrics import categorical_accuracy
 import models
+import rates
 
 # initialize the tensorflow session
 sess = tf.Session()
@@ -19,7 +20,7 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_C
 img_input = models.img_conv if USE_CONV else models.img_dense
 
 # Some parameters
-num_iterations = 1000
+num_iterations = 5000
 batch_size = 100
 temperature = 0.9
 # list of probes between the mentor and mentee by layer; 0-indexed
@@ -114,25 +115,25 @@ def get_gradient_ops(probes, mentee, mentor, img_input, emperature):
     return probe_gradients
 
 
-def compute_alpha(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.001
-
-
-def compute_beta(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.1
-
-
-def compute_gamma(epoch):
-    """
-    Compute alpha based on itr t
-    """
-    return 0.1
+# def compute_alpha(epoch):
+#     """
+#     Compute alpha based on itr t
+#     """
+#     return 0.1
+#
+#
+# def compute_beta(epoch):
+#     """
+#     Compute alpha based on itr t
+#     """
+#     return 0.1
+#
+#
+# def compute_gamma(epoch):
+#     """
+#     Compute alpha based on itr t
+#     """
+#     return 0.1
 
 
 mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
@@ -142,7 +143,8 @@ mentee_preds = mentee_model.output
 # NOTE: order is important here. If these lines are moved below
 # the instantiation of the mentor net, then this also computes
 # gradients for the mentor! We don't want that.
-opt = tf.train.AdamOptimizer()
+learning_rate = tf.placeholder(tf.float32, shape=[])
+opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentee_preds))
 labels_grads_and_vars = opt.compute_gradients(loss)
 apply_grads_and_vars = opt.apply_gradients(labels_grads_and_vars)
@@ -162,7 +164,7 @@ probe_gradients = get_gradient_ops(probes, mentee_model, mentor_model, img_input
 print ("Probe gradients: ", probe_gradients)
 
 for i in range(num_iterations):
-    if i % 100 == 0:
+    if i % 10 == 0:
         print ("Mentee accuracy at step: ", i, sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,
                                         models.labels: mnist.test.labels}),
                                         "epochs: ", mnist.train.epochs_completed, ", saving model")
@@ -176,9 +178,9 @@ for i in range(num_iterations):
 
     # compute all probe (w/o the softmax probe)
     computed_probe_gradients = []
-    for i in range(len(probe_gradients)-1):
+    for j in range(len(probe_gradients)-1):
         probe_grad = []
-        probe_grad_op = probe_gradients[i]
+        probe_grad_op = probe_gradients[j]
         for g in probe_grad_op:
             if g is not None:
                 probe_grad.append(sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}))
@@ -189,25 +191,27 @@ for i in range(num_iterations):
     # compute gradients for softmax probe
     computed_probe_out_gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g in probe_gradients[-1]]
 
-    a = compute_alpha(i)
-    b = compute_beta(i)
-    g = compute_gamma(i)
+    n = rates.compute_n(mnist.train.epochs_completed)
+    a = rates.compute_alpha(mnist.train.epochs_completed)
+    b = rates.compute_beta(mnist.train.epochs_completed)
+    g = rates.compute_gamma(mnist.train.epochs_completed)
 
-    for i in range(len(gradients)):
-        # set gradients for variable i
-        gradients[i] = a*gradients[i]
+    for j in range(len(gradients)):
+        # set gradients for variable j
+        gradients[j] = a*gradients[j]
+
         # sum the probes
-        for j in range(len(computed_probe_gradients)):
-            probe_grad = computed_probe_gradients[j]
-            if (probe_grad[i] is not None): # if there is a gradient for probe j for layer i
-                gradients[i] += b*probe_grad[i]
+        for k in range(len(computed_probe_gradients)):
+            probe_grad = computed_probe_gradients[k]
+            if (probe_grad[j] is not None): # if there is a gradient from probe k for var j
+                gradients[j] += b*probe_grad[j]
 
         # add the output softmax probe
-        gradients[i] += computed_probe_out_gradients[i]
+        gradients[j] += g*computed_probe_out_gradients[j]
 
     # apply grads
     grads_n_vars = [(gradients[i], labels_grads_and_vars[i][1]) for i in range(len(labels_grads_and_vars))]
-    sess.run(opt.apply_gradients(grads_n_vars))
+    sess.run(opt.apply_gradients(grads_n_vars), feed_dict={learning_rate: n})
 
 
 print (sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,

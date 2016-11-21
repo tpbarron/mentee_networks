@@ -10,12 +10,12 @@ import models
 sess = tf.Session()
 K.set_session(sess)
 
-USE_CONV = False
+USE_CONV = True
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_CONV))
 
-mentor_model = models.build_mentor_model_sequential_conv() if USE_CONV else models.build_mentor_model_sequential()
+mentor_model = models.build_mentor_model_conv() if USE_CONV else models.build_mentor_model()
 mentor_preds = mentor_model.output
 
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
