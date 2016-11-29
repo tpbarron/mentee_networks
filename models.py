@@ -1,7 +1,8 @@
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers.core import Dense, Reshape, Activation, Flatten
+from keras.layers.core import Dense, Reshape, Activation, Flatten, Dropout
 from keras.layers.convolutional import Convolution2D
+from keras.layers.pooling import MaxPooling2D
 
 ################################################################################
 # Model creation
@@ -36,12 +37,16 @@ def build_mentor_model_conv(load=False):
     # Keras and TensorFlow representations
     # See https://blog.keras.io/keras-as-a-simplified-interface-to-tensorflow-tutorial.html
     # for additional information
-    l1 = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu', input_shape=(28, 28, 1))
+    l1 = Convolution2D(20, 5, 5, subsample=(1, 1), border_mode='same', activation='relu', input_shape=(28, 28, 1))
     l1.set_input(img_conv)
     mentor_model.add(l1)
-    mentor_model.add(Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu'))
+    mentor_model.add(MaxPooling2D(pool_size=(2, 2), border_mode='valid'))
+    mentor_model.add(Convolution2D(50, 3, 3, subsample=(1, 1), border_mode='same', activation='relu'))
+    mentor_model.add(MaxPooling2D(pool_size=(2, 2), border_mode='valid'))
     mentor_model.add(Flatten())
-    mentor_model.add(Dense(10, name='mentor_dense_2'))
+    mentor_model.add(Dense(64, activation='relu'))
+    mentor_model.add(Dense(64, activation='relu'))
+    mentor_model.add(Dense(10))
     mentor_model.add(Activation('softmax'))
     if load:
         print ("Loading saved model")

@@ -4,8 +4,8 @@ import matplotlib.patches as mpatches
 from matplotlib.legend_handler import HandlerLine2D
 
 
-num_epochs_to_learn_representation = 7
-convergence = 50
+num_epochs_to_learn_representation = 10
+convergence = 70
 
 
 # this is the learning rate (a funtion of iteration). Later i shold be the epoch
