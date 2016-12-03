@@ -4,7 +4,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.objectives import categorical_crossentropy
 from keras.metrics import categorical_accuracy
-
+import os
 import models
 import learning_rates
 import mnist_data
@@ -25,37 +25,60 @@ else:
     mentor_model = models.build_mentor_model_conv_cifar10()
     img_input = models.img_cifar
 
+run_name = "mentor" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
+summary_name = run_name + "_accuracy"
+model_save_name = run_name + ".h5"
+
 mentor_preds = mentor_model.output
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
 
 acc_value = categorical_accuracy(models.labels, mentor_preds)
 learning_rate = tf.placeholder(tf.float32, shape=[])
 train_step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+
+# create a summary for our mentor accuracy
+count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
+log_dir = os.path.join('logs/', str(count))
+os.mkdir(log_dir)
+tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
+tf.scalar_summary(summary_name, acc_value)
+summary_op = tf.merge_all_summaries()
+
 sess.run(tf.initialize_all_variables())
 
-num_epochs = 50
-batch_size = 100
-
-num_epochs = 50
+max_epochs = 50
 batch_size = 100
 
 with sess.as_default():
     last_epoch = -1
-    while dataset.train.epochs_completed < num_epochs:
+    best_accuracy = 0.0
+    i = 0
+    while dataset.train.epochs_completed < max_epochs:
         if dataset.train.epochs_completed > last_epoch:
             acc = acc_value.eval(feed_dict={img_input: dataset.test.images,
                                             models.labels: dataset.test.labels})
+            if acc > best_accuracy:
+                mentor_model.save(model_save_name)
+                best_accuracy = acc
+
             last_epoch = dataset.train.epochs_completed
             print ("Step: ", last_epoch, acc)
+
+
+        # # perform tensorboard ops the operations, and write log
+        summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
+        tensorboard_writer.add_summary(summary, i*batch_size) # i * batch_size is num samples seen #dataset.train.epochs_completed)
 
         batch = dataset.train.next_batch(batch_size)
         n = learning_rates.compute_n(dataset.train.epochs_completed)
         train_step.run(feed_dict={img_input: batch[0],
                                   models.labels: batch[1],
                                   learning_rate: n})
+        i += 1
 
-    print (acc_value.eval(feed_dict={img_input: dataset.test.images,
-                                    models.labels: dataset.test.labels}))
+    final_acc = acc_value.eval(feed_dict={img_input: dataset.test.images,
+                                    models.labels: dataset.test.labels})
+    print (final_acc)
 
-model_name = "mentor_conv.h5" if USE_CONV else "mentor_dense.h5"
-mentor_model.save(model_name)
+    if final_acc > best_accuracy:
+        mentor_model.save(model_save_name)

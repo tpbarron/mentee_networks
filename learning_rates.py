@@ -1,7 +1,7 @@
 from __future__ import division  # which forces / to adopt Python 3.x's behavior that always returns a float.
 import matplotlib.pyplot as plt
 
-scaler = 10
+scaler = 1
 num_epochs_to_learn_representation = 10*scaler
 convergence = 70*scaler
 
