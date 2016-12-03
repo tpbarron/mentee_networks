@@ -14,9 +14,9 @@ img_cifar = tf.placeholder(tf.float32, name='img_input', shape=(None, 32, 32, 3)
 labels = tf.placeholder(tf.float32, name='labels', shape=(None, 10))
 
 
-#
+################################################################################
 # Dense MNIST models
-#
+################################################################################
 
 def build_mentor_model(load=False):
     mentor_model = Sequential()
@@ -47,9 +47,9 @@ def build_mentee_model():
     return mentee_model
 
 
-#
+################################################################################
 # Convolutional MNIST models
-#
+################################################################################
 
 def build_mentor_model_conv(load=False):
     mentor_model = Sequential()
@@ -70,7 +70,7 @@ def build_mentor_model_conv(load=False):
     mentor_model.add(Activation('softmax'))
     if load:
         print ("Loading saved model")
-        mentor_model.load_weights('mentor_conv.h5')
+        mentor_model.load_weights('models/mentor_conv_mnist.h5')
     return mentor_model
 
 
@@ -86,9 +86,42 @@ def build_mentee_model_conv():
     return mentee_model
 
 
-#
+################################################################################
+# DQN models
+################################################################################
+
+def build_mentor_model_dqn(inputs, num_actions, load=False):
+    inputs = tf.transpose(inputs, [0, 2, 3, 1])
+    dqn = Sequential()
+    l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
+    l1.set_input(inputs)
+    dqn.add(l1)
+    dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
+    dqn.add(Flatten())
+    dqn.add(Dense(256, activation='relu'))
+    dqn.add(Dense(num_actions))
+    if load:
+        print ("Loading saved model")
+        dqn.load_weights('mentor_dqn.h5')
+    return dqn
+
+
+def build_mentee_model_dqn(inputs, num_actions):
+    inputs = tf.transpose(inputs, [0, 2, 3, 1])
+    dqn = Sequential()
+    l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
+    l1.set_input(inputs)
+    dqn.add(l1)
+    dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
+    dqn.add(Flatten())
+    dqn.add(Dense(256, activation='relu'))
+    dqn.add(Dense(num_actions))
+    return dqn
+
+
+################################################################################
 # Convolutional CIFAR-10 models
-#
+################################################################################
 
 def build_mentor_model_conv_cifar10(load=False):
     model = Sequential()

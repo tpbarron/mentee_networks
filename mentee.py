@@ -1,5 +1,4 @@
 from __future__ import print_function
-import numpy as np
 import tensorflow as tf
 import keras
 from keras import backend as K
@@ -7,14 +6,15 @@ from keras.objectives import categorical_crossentropy
 from keras.metrics import categorical_accuracy
 import models
 import learning_rates
-import os
 import data_abstraction
+import mnist_data
+import cifar_data
+import probe_ops
+import os
 
 # initialize the tensorflow session
 sess = tf.Session()
 K.set_session(sess)
-
-USE_CONV = True
 
 # Some parameters
 num_epochs= 500
@@ -29,96 +29,24 @@ probes = [
     (1, 1)
 ]
 
-img_input = models.img_conv if USE_CONV else models.img_dense
+USE_CONV = True
+MNIST = True # True for MNIST, False for CIFAR-10
 
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_CONV))
-data = data_abstraction.DataAbstration(mnist, batch_size, subsample)
+if (MNIST):
+    dataset = mnist_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_CONV))
+    mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
+    img_input = models.img_conv if USE_CONV else models.img_dense
+else:
+    dataset = cifar_data.read_data_sets('CIFAR_data')
+    mentee_model = models.build_mentee_model_conv_cifar10()
+    img_input = models.img_cifar
 
-tensorboard_writer = tf.train.SummaryWriter('logs/', graph=tf.get_default_graph())
-
-# a function that returns a list of gradient ops and perhaps the layer of the probe
-def get_gradient_ops(probes, mentee, mentor, img_input, emperature):
-    probe_gradients = []
-    for p in probes:
-        mentor_layer_index, mentee_layer_index = p
-
-        # Ensure that the probe index is not the softmax layer
-        assert mentor_layer_index < (len(mentor.layers) - 1)
-        assert mentee_layer_index < (len(mentee.layers) - 1)
-
-        # define a loss function between the hidden layer activations of each network
-        mentor_layer_preds = K.function([img_input], [mentor_model.layers[mentor_layer_index].output]).outputs[0]
-        mentee_layer_preds = K.function([img_input], [mentee_model.layers[mentee_layer_index].output]).outputs[0]
-
-        if (isinstance(mentor_model.layers[mentor_layer_index], keras.layers.core.Dense)):
-            # Dense case
-            if (not isinstance(mentee_model.layers[mentee_layer_index], keras.layers.core.Dense)):
-                raise Exception("Probes between two different layer types, Dense to Conv2d")
-
-            output_mentor = mentor_model.layers[mentor_layer_index].output_dim
-            output_mentee = mentee_model.layers[mentee_layer_index].output_dim
-            if (output_mentee > output_mentor):
-                raise Exception("Mentee has more outputs than mentor")
-            slice_ind = output_mentee
-
-            # Ok let's assume that the mentor will always be >= in size than the mentee
-            # then want to consider the error along the first n value where n is the min(mentor, mentee)
-            # use slice to ignore irrelevant outputs
-            probe_layer_loss = tf.sqrt(
-                                tf.reduce_mean(
-                                    tf.squared_difference(
-                                        tf.slice(mentor_layer_preds, [0, 0], [batch_size, slice_ind]), #mentee_model.layers[mentor_layer_index].output_dim]),
-                                        tf.slice(mentee_layer_preds, [0, 0], [batch_size, slice_ind]) #mentee_model.layers[mentee_layer_index].output_dim])
-                                    )
-                                )
-                            )
-        elif (isinstance(mentor_model.layers[mentor_layer_index], keras.layers.convolutional.Convolution2D)):
-            # Convolution2D case
-            if (not isinstance(mentee_model.layers[mentee_layer_index], keras.layers.convolutional.Convolution2D)):
-                raise Exception("Probes between two different layer types, Conv2d to Dense")
-
-            out_shape_mentor = mentor_model.layers[mentor_layer_index].output_shape
-            out_shape_mentee = mentee_model.layers[mentee_layer_index].output_shape
-            if (out_shape_mentee[-1] > out_shape_mentor[-1]):
-                raise Exception("Mentee has more feature maps than mentor")
-            _, fmap_rows, fmap_cols, slice_ind = out_shape_mentee
-            # Now assume that the feature maps in both nets are the same size and only the number
-            # of feature maps vary
-            probe_layer_loss = tf.sqrt(
-                                tf.reduce_mean(
-                                    tf.squared_difference(
-                                        tf.slice(mentor_layer_preds, [0, 0, 0, 0], [batch_size, fmap_rows, fmap_cols, slice_ind]),
-                                        tf.slice(mentee_layer_preds, [0, 0, 0, 0], [batch_size, fmap_rows, fmap_cols, slice_ind])
-                                    )
-                                )
-                            )
-
-        probe_layer_grads = tf.gradients(probe_layer_loss, mentee_model.trainable_weights)
-        probe_gradients.append(probe_layer_grads)
-
-    # added all probes, now add the output softmax probe
-    # use the output of the last layer before the sotfmax
-    # NOTE: assume this is a dense layer and that it has the same number of outputs
-    mentor_out_preds = K.function([img_input], [mentor_model.layers[-2].output]).outputs[0]
-    mentee_out_preds = K.function([img_input], [mentee_model.layers[-2].output]).outputs[0]
-
-    # Define the loss between the mentor and mentee output with temperature softmax
-    probe_out_loss = tf.sqrt(
-                        tf.reduce_mean(
-                            tf.squared_difference(
-                                tf.div(tf.exp(tf.div(mentor_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentor_out_preds, temperature)))),
-                                tf.div(tf.exp(tf.div(mentee_out_preds, temperature)), tf.reduce_sum(tf.exp(tf.div(mentee_out_preds, temperature))))
-                            )
-                        )
-                    )
-    probe_out_grads = tf.gradients(probe_out_loss, mentee_model.trainable_weights)
-    probe_gradients.append(probe_out_grads)
-    return probe_gradients
-
-
-mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
 mentee_preds = mentee_model.output
+
+run_name = "mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
+summary_name = run_name + "_accuracy"
+model_save_name = run_name + ".h5"
+data = data_abstraction.DataAbstration(dataset, batch_size, subsample)
 
 # tensorflow optimizer and gradients wrt loss
 # NOTE: order is important here. If these lines are moved below
@@ -129,51 +57,55 @@ opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentee_preds))
 labels_grads_and_vars = opt.compute_gradients(loss)
 apply_grads_and_vars = opt.apply_gradients(labels_grads_and_vars)
-
 print ("Label grads and vars ops: ", len(labels_grads_and_vars))
-sess.run(tf.initialize_all_variables())
 
 # build mentor model
-mentor_model = models.build_mentor_model_conv(load=True) if USE_CONV else models.build_mentor_model(load=True)
+if MNIST:
+    mentor_model = models.build_mentor_model_conv(load=True) if USE_CONV else models.build_mentor_model(load=True)
+else:
+    mentor_model = models.build_mentor_model_conv_cifar10(load=True)
 mentor_preds = mentor_model.output
+
+probe_gradients = probe_ops.get_gradient_ops(probes, mentee_model, mentor_model, img_input, batch_size, temperature)
 
 # ops to compute the accuracy of the mentor and mentee
 acc_value_mentor = categorical_accuracy(models.labels, mentor_preds)
 acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 # create a summary for our mentee accuracy
-tf.scalar_summary("mentee_accuracy", acc_value_mentee)
+count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
+log_dir = os.path.join('logs/', str(count))
+os.mkdir(log_dir)
+tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
+tf.scalar_summary(summary_name, acc_value_mentee)
 summary_op = tf.merge_all_summaries()
 
-probe_gradients = get_gradient_ops(probes, mentee_model, mentor_model, img_input, temperature)
+sess.run(tf.initialize_all_variables())
 
 def train_mentee(dataset_config, mentee_mode):
-    output =[]
-
     # #TODO: please check if I initialize the weights for the mentee network the following line correctly -- not affecting the mentor network
     # sess.run(tf.initialize_all_variables())
     # mnist.train._index_in_epoch = 0 #re-read from the begining of the dataset
-
-    print ("dataset configuration: ", dataset_config)
-    # print ("total number of batches: ", total_batch)
-    print ("Mentee network mode ", mentee_mode)
-
+    output = []
     last_epoch = -1
+    best_accuracy = 0.0
     i = 0
     while data.epochs < num_epochs:
-        acc = sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images, models.labels: mnist.test.labels})
-
-        output.append("epoch: "+ str(data.epochs) + ", accuracy: " + str(acc))
         if data.epochs > last_epoch:
+            acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
+            output.append("epoch: "+ str(data.epochs) + ", accuracy: " + str(acc))
+
+            if acc > best_accuracy:
+                best_accuracy = acc
+                mentee_model.save(model_save_name)
+
             last_epoch = data.epochs
             print ("Step: ", last_epoch, acc)
-            model_name = "mentee_conv.h5" if USE_CONV else "mentee_dense.h5"
-            mentee_model.save(model_name)
 
         batch = data.next_batch()
 
         # perform tensorboard ops the operations, and write log
-        summary = sess.run(summary_op, feed_dict={img_input: mnist.test.images, models.labels: mnist.test.labels})
+        summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
         tensorboard_writer.add_summary(summary, i)
 
         # Compute all needed gradients
@@ -196,10 +128,10 @@ def train_mentee(dataset_config, mentee_mode):
         # compute gradients for softmax probe
         computed_probe_out_gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g in probe_gradients[-1]]
 
-        n = learning_rates.compute_n(mnist.train.epochs_completed)
-        a = learning_rates.compute_eta_alpha(mnist.train.epochs_completed, mentee_mode)
-        b = learning_rates.compute_eta_beta(mnist.train.epochs_completed, mentee_mode)
-        g = learning_rates.compute_eta_gamma(mnist.train.epochs_completed, mentee_mode)
+        n = learning_rates.compute_n(data.epochs)
+        a = learning_rates.compute_eta_alpha(data.epochs, mentee_mode)
+        b = learning_rates.compute_eta_beta(data.epochs, mentee_mode)
+        g = learning_rates.compute_eta_gamma(data.epochs, mentee_mode)
 
         for j in range(len(gradients)):
             # set gradients for variable j
@@ -220,19 +152,26 @@ def train_mentee(dataset_config, mentee_mode):
 
         i += 1
 
-    acc= sess.run(acc_value_mentee, feed_dict={img_input: mnist.test.images,
-                                    models.labels: mnist.test.labels})
-    output.append("epoch: " + str(mnist.train.epochs_completed+1) + ", accuracy: " + str(acc))
-    #print (acc)
+    acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images,
+                                    models.labels: dataset.test.labels})
+    output.append("epoch: " + str(data.epochs+1) + ", accuracy: " + str(acc))
+    if acc > best_accuracy:
+        mentee_model.save(model_save_name)
 
-    model_name = "mentee_conv.h5" if USE_CONV else "mentee_dense.h5"
-    mentee_model.save(model_name)
     return output
 
 
+import sys
 if __name__ == "__main__":
+    if (len(sys.argv) < 3):
+        p = 0
+        mode = 'obedient'
+    else:
+        p = int(sys.argv[1])
+        mode = sys.argv[2]
 
-    train_mentee('', 'obedient')
+    print ("Running MNIST-"+str(p)+" with mode: " + mode)
+    train_mentee(p, mode)
 
     # for i in ("adamant", "obedient", "independent"):
     #     output = []
