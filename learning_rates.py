@@ -1,11 +1,9 @@
 from __future__ import division  # which forces / to adopt Python 3.x's behavior that always returns a float.
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.legend_handler import HandlerLine2D
 
-
-num_epochs_to_learn_representation = 10
-convergence = 70
+scaler = 10
+num_epochs_to_learn_representation = 10*scaler
+convergence = 70*scaler
 
 
 # this is the learning rate (a funtion of iteration). Later i shold be the epoch
@@ -13,7 +11,7 @@ convergence = 70
 # traing mentee on every settings.
 
 def compute_n(i):
-    n = 0
+    n = 0.001
     if i < convergence:
         n = 0.01 - (0.005 * i / convergence)
     return n
@@ -97,7 +95,7 @@ def plot_learning_rates():
     beta_list_adamant = []
     gamma_list_adamant = []
 
-    for i in range(200):
+    for i in range(1000):
         n = compute_n(i)
         alpha = compute_eta_alpha(i, 'obedient')
         beta = compute_eta_beta(i, 'obedient')
