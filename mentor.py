@@ -36,6 +36,9 @@ sess.run(tf.initialize_all_variables())
 num_epochs = 50
 batch_size = 100
 
+num_epochs = 50
+batch_size = 100
+
 with sess.as_default():
     last_epoch = -1
     while dataset.train.epochs_completed < num_epochs:
