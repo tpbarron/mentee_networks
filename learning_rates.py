@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 scaler = 1
 num_epochs_to_learn_representation = 10*scaler
-convergence = 70*scaler
+convergence = 30*scaler
 
 
 # this is the learning rate (a funtion of iteration). Later i shold be the epoch

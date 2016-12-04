@@ -1,25 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Teaching a machine to play an Atari game (Pacman by default) by implementing
-a 1-step Q-learning with TFLearn, TensorFlow and OpenAI gym environment. The
-algorithm is described in "Asynchronous Methods for Deep Reinforcement Learning"
-paper. OpenAI's gym environment is used here for providing the Atari game
-environment for handling games logic and states. This example is originally
-adapted from Corey Lynch's repo (url below).
 
-Requirements:
-    - gym environment (pip install gym)
-    - gym Atari environment (pip install gym[atari])
-
-References:
-    - Asynchronous Methods for Deep Reinforcement Learning. Mnih et al, 2015.
-
-Links:
-    - Paper: http://arxiv.org/pdf/1602.01783v1.pdf
-    - OpenAI's gym: https://gym.openai.com/
-    - Original Repo: https://github.com/coreylynch/async-rl
-
-"""
 from __future__ import division, print_function, absolute_import
 
 import threading
@@ -39,6 +18,43 @@ from keras.layers.convolutional import Convolution2D
 
 import models
 
+
+approx = models.build_mentor_model_dqn()
+approx_pred = approx.output
+
+run_name = "mentor_qnet"
+summary_name = run_name + "_accuracy"
+model_save_name = run_name + ".h5"
+
+loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
+
+acc_value = categorical_accuracy(models.labels, mentor_preds)
+learning_rate = tf.placeholder(tf.float32, shape=[])
+train_step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+
+# create a summary for our mentor accuracy
+count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
+log_dir = os.path.join('logs/', str(count))
+os.mkdir(log_dir)
+tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
+tf.scalar_summary(summary_name, acc_value)
+summary_op = tf.merge_all_summaries()
+
+sess.run(tf.initialize_all_variables())
+
+max_episodes = 3000
+batch_size = 100
+
+
+episode = 0
+while episode < max_episodes:
+
+    done = False
+    while not done:
+
+        
+
+
 # Change that value to test instead of train
 testing = False
 # Model path (to load when testing)
@@ -47,7 +63,7 @@ test_model_path = '/path/to/your/qlearning.tflearn.ckpt'
 # You can also try: 'Breakout-v0', 'Pong-v0', 'SpaceInvaders-v0', ...
 game = 'Pong-v0'
 # Learning threads
-n_threads = 2
+n_threads = 8
 
 # =============================
 #   Training Parameters
@@ -75,9 +91,9 @@ anneal_epsilon_timesteps = 400000
 # Display or not gym evironment screens
 show_training = True
 # Directory for storing tensorboard summaries
-summary_dir = 'logs/qlearning/'
+summary_dir = 'dqn_logs/qlearning/'
 summary_interval = 100
-checkpoint_path = 'logs/qlearning.ckpt'
+checkpoint_path = 'dqn_logs/qlearning.ckpt'
 checkpoint_interval = 2000
 # Number of episodes to run gym evaluation
 num_eval_episodes = 100
@@ -459,6 +475,7 @@ def evaluation(session, graph_ops, saver):
 def main():
     with tf.Session() as session:
         K.set_session(session)
+
         num_actions = get_num_actions()
         graph_ops = build_graph(num_actions)
         saver = tf.train.Saver(max_to_keep=5)

@@ -46,13 +46,14 @@ summary_op = tf.merge_all_summaries()
 
 sess.run(tf.initialize_all_variables())
 
-max_epochs = 50
+max_epochs = 30
 batch_size = 100
 
 with sess.as_default():
     last_epoch = -1
     best_accuracy = 0.0
     i = 0
+    samples = dataset.train.images.shape[0]
     while dataset.train.epochs_completed < max_epochs:
         if dataset.train.epochs_completed > last_epoch:
             acc = acc_value.eval(feed_dict={img_input: dataset.test.images,
@@ -62,12 +63,18 @@ with sess.as_default():
                 best_accuracy = acc
 
             last_epoch = dataset.train.epochs_completed
+            # perform tensorboard ops the operations, and write log
+            summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
+            tensorboard_writer.add_summary(summary, last_epoch) # i * batch_size is num samples seen #dataset.train.epochs_completed)
+
+            # i = 0
             print ("Step: ", last_epoch, acc)
 
 
-        # # perform tensorboard ops the operations, and write log
-        summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
-        tensorboard_writer.add_summary(summary, i*batch_size) # i * batch_size is num samples seen #dataset.train.epochs_completed)
+        # # # perform tensorboard ops the operations, and write log
+        # summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
+        # print ("x = ", last_epoch + (i*batch_size)/float(samples))
+        # tensorboard_writer.add_summary(summary, last_epoch+(i*batch_size)/float(samples)) # i * batch_size is num samples seen #dataset.train.epochs_completed)
 
         batch = dataset.train.next_batch(batch_size)
         n = learning_rates.compute_n(dataset.train.epochs_completed)

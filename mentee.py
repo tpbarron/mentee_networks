@@ -11,16 +11,24 @@ import mnist_data
 import cifar_data
 import probe_ops
 import os
+import sys
 
 # initialize the tensorflow session
 sess = tf.Session()
 K.set_session(sess)
 
+if (len(sys.argv) < 3):
+    p = None
+    mode = 'obedient'
+else:
+    p = int(sys.argv[1])
+    mode = sys.argv[2]
+
 # Some parameters
-num_epochs= 500
-subsample = 50 # the number of samples from each class to use
-batch_size = 100 # please set this to less than or equal to 10*subsample
-dataset_config = ''
+num_epochs= 30
+subsample = p # the number of samples from each class to use
+batch_size = min(10*subsample, 100) # please set this to less than or equal to 10*subsample
+mentee_mode = mode
 temperature = 0.9
 # list of probes between the mentor and mentee by layer; 0-indexed
 # the output probe does not need to be specified
@@ -43,7 +51,7 @@ else:
 
 mentee_preds = mentee_model.output
 
-run_name = "mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
+run_name = mentee_mode + "_mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10") + ("_" + str(subsample) if subsample is not None else "")
 summary_name = run_name + "_accuracy"
 model_save_name = run_name + ".h5"
 data = data_abstraction.DataAbstration(dataset, batch_size, subsample)
@@ -82,7 +90,7 @@ summary_op = tf.merge_all_summaries()
 
 sess.run(tf.initialize_all_variables())
 
-def train_mentee(dataset_config, mentee_mode):
+def train_mentee(mentee_mode):
     # #TODO: please check if I initialize the weights for the mentee network the following line correctly -- not affecting the mentor network
     # sess.run(tf.initialize_all_variables())
     # mnist.train._index_in_epoch = 0 #re-read from the begining of the dataset
@@ -129,9 +137,10 @@ def train_mentee(dataset_config, mentee_mode):
         computed_probe_out_gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g in probe_gradients[-1]]
 
         n = learning_rates.compute_n(data.epochs)
-        a = learning_rates.compute_eta_alpha(data.epochs, mentee_mode)
-        b = learning_rates.compute_eta_beta(data.epochs, mentee_mode)
-        g = learning_rates.compute_eta_gamma(data.epochs, mentee_mode)
+        # scale by 1.0/n because these param are a*lr and lr will be applied in the gradient update
+        a = learning_rates.compute_eta_alpha(data.epochs, mentee_mode)*1.0/n
+        b = learning_rates.compute_eta_beta(data.epochs, mentee_mode)*1.0/n
+        g = learning_rates.compute_eta_gamma(data.epochs, mentee_mode)*1.0/n
 
         for j in range(len(gradients)):
             # set gradients for variable j
@@ -160,19 +169,21 @@ def train_mentee(dataset_config, mentee_mode):
 
     return output
 
+print ("Running MNIST-"+str(subsample)+" with mode: " + mentee_mode)
+train_mentee(mentee_mode)
 
-import sys
-if __name__ == "__main__":
-    if (len(sys.argv) < 3):
-        p = 0
-        mode = 'obedient'
-    else:
-        p = int(sys.argv[1])
-        mode = sys.argv[2]
-
-    print ("Running MNIST-"+str(p)+" with mode: " + mode)
-    train_mentee(p, mode)
-
+# import sys
+# if __name__ == "__main__":
+#     if (len(sys.argv) < 3):
+#         p = 0
+#         mode = 'obedient'
+#     else:
+#         p = int(sys.argv[1])
+#         mode = sys.argv[2]
+#
+#     print ("Running MNIST-"+str(p)+" with mode: " + mode)
+#     train_mentee(p, mode)
+#
     # for i in ("adamant", "obedient", "independent"):
     #     output = []
     #     file_name= (i + "_mentee_mode.txt")

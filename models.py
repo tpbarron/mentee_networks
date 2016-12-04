@@ -90,33 +90,30 @@ def build_mentee_model_conv():
 # DQN models
 ################################################################################
 
-def build_mentor_model_dqn(inputs, num_actions, load=False):
-    inputs = tf.transpose(inputs, [0, 2, 3, 1])
+def build_mentor_model_dqn(load=False):
     dqn = Sequential()
-    l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
+    l1 = Dense(32, activation='sigmoid', input_shape=(None, 4)
     l1.set_input(inputs)
     dqn.add(l1)
-    dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
-    dqn.add(Flatten())
-    dqn.add(Dense(256, activation='relu'))
-    dqn.add(Dense(num_actions))
+    dqn.add(Dense(16, activation='sigmoid'))
+    dqn.add(Dense(2))
     if load:
         print ("Loading saved model")
-        dqn.load_weights('mentor_dqn.h5')
+        dqn.load_weights('mentor_qnet.h5')
     return dqn
 
 
-def build_mentee_model_dqn(inputs, num_actions):
-    inputs = tf.transpose(inputs, [0, 2, 3, 1])
-    dqn = Sequential()
-    l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
-    l1.set_input(inputs)
-    dqn.add(l1)
-    dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
-    dqn.add(Flatten())
-    dqn.add(Dense(256, activation='relu'))
-    dqn.add(Dense(num_actions))
-    return dqn
+# def build_mentee_model_dqn(inputs, num_actions):
+#     inputs = tf.transpose(inputs, [0, 2, 3, 1])
+#     dqn = Sequential()
+#     l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
+#     l1.set_input(inputs)
+#     dqn.add(l1)
+#     dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
+#     dqn.add(Flatten())
+#     dqn.add(Dense(256, activation='relu'))
+#     dqn.add(Dense(num_actions))
+#     return dqn
 
 
 ################################################################################
