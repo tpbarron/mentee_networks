@@ -48,3 +48,5 @@
 39: independent mnist-100
 40: independent mnist-250
 41: independent mnist-500
+
+# rerunnign trying to get plots on same graph
