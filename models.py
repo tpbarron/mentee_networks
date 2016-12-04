@@ -90,17 +90,17 @@ def build_mentee_model_conv():
 # DQN models
 ################################################################################
 
-def build_mentor_model_dqn(load=False):
-    dqn = Sequential()
-    l1 = Dense(32, activation='sigmoid', input_shape=(None, 4)
-    l1.set_input(inputs)
-    dqn.add(l1)
-    dqn.add(Dense(16, activation='sigmoid'))
-    dqn.add(Dense(2))
-    if load:
-        print ("Loading saved model")
-        dqn.load_weights('mentor_qnet.h5')
-    return dqn
+# def build_mentor_model_dqn(load=False):
+#     dqn = Sequential()
+#     l1 = Dense(32, activation='sigmoid', input_shape=(None, 4)
+#     l1.set_input(inputs)
+#     dqn.add(l1)
+#     dqn.add(Dense(16, activation='sigmoid'))
+#     dqn.add(Dense(2))
+#     if load:
+#         print ("Loading saved model")
+#         dqn.load_weights('mentor_qnet.h5')
+#     return dqn
 
 
 # def build_mentee_model_dqn(inputs, num_actions):

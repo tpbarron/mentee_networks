@@ -25,3 +25,26 @@
 21: independent mnist-100
 22: independent mnist-250
 23: independent mnist-500
+
+# rerunning with proper snapshotting
+
+24: obedient mnist-1
+25: obedient mnist-10
+26: obedient mnist-50
+27: obedient mnist-100
+28: obedient mnist-250
+29: obedient mnist-500
+
+30: adamant mnist-1
+31: adamant mnist-10
+32: adamant mnist-50
+33: adamant mnist-100
+34: adamant mnist-250
+35: adamant mnist-500
+
+36: independent mnist-1
+37: independent mnist-10
+38: independent mnist-50
+39: independent mnist-100
+40: independent mnist-250
+41: independent mnist-500
