@@ -82,7 +82,7 @@ acc_value_mentor = categorical_accuracy(models.labels, mentor_preds)
 acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 # create a summary for our mentee accuracy
-direc = mentee_mode + '_logs/'
+direc = 'logs/' + mentee_mode + '_logs/'
 count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
 log_dir = os.path.join(direc, mentee_mode+str(subsample))
 os.mkdir(log_dir)
