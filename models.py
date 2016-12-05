@@ -13,6 +13,9 @@ img_conv = tf.placeholder(tf.float32, name='img_input', shape=(None, 28, 28, 1))
 img_cifar = tf.placeholder(tf.float32, name='img_input', shape=(None, 32, 32, 3))
 labels = tf.placeholder(tf.float32, name='labels', shape=(None, 10))
 
+obs_cartpole = tf.placeholder(tf.float32, name='obs_input', shape=(None, 4))
+act_cartpole = tf.placeholder(tf.float32, name='act_output', shape=(None, 2))
+
 
 ################################################################################
 # Dense MNIST models
@@ -87,33 +90,32 @@ def build_mentee_model_conv():
 
 
 ################################################################################
-# DQN models
+# RL models
 ################################################################################
 
-# def build_mentor_model_dqn(load=False):
-#     dqn = Sequential()
-#     l1 = Dense(32, activation='sigmoid', input_shape=(None, 4)
-#     l1.set_input(inputs)
-#     dqn.add(l1)
-#     dqn.add(Dense(16, activation='sigmoid'))
-#     dqn.add(Dense(2))
-#     if load:
-#         print ("Loading saved model")
-#         dqn.load_weights('mentor_qnet.h5')
-#     return dqn
+def build_mentor_model_dqn(input_tensor, load=False):
+    dqn = Sequential()
+    # dqn.add(Dense(8, activation='sigmoid', input_shape=(4,)))
+    l1 = Dense(8, activation='sigmoid', input_shape=(4,))
+    l1.set_input(input_tensor)
+    dqn.add(l1)
+    # dqn.add(Dense(16, activation='sigmoid'))
+    dqn.add(Dense(2))
+    dqn.add(Activation('softmax'))
+    if load:
+        print ("Loading saved model")
+        dqn.load_weights('mentor_polgrad.h5')
+    return dqn
 
 
-# def build_mentee_model_dqn(inputs, num_actions):
-#     inputs = tf.transpose(inputs, [0, 2, 3, 1])
-#     dqn = Sequential()
-#     l1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', input_shape=(84, 84, 4))
-#     l1.set_input(inputs)
-#     dqn.add(l1)
-#     dqn.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
-#     dqn.add(Flatten())
-#     dqn.add(Dense(256, activation='relu'))
-#     dqn.add(Dense(num_actions))
-#     return dqn
+def build_mentee_model_dqn(input_tensor):
+    dqn = Sequential()
+    l1 = Dense(8, activation='sigmoid', input_shape=(4,))
+    l1.set_input(input_tensor)
+    dqn.add(l1)
+    dqn.add(Dense(2))
+    dqn.add(Activation('softmax'))
+    return dqn
 
 
 ################################################################################

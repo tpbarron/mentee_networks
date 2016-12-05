@@ -103,7 +103,7 @@ def train_mentee(mentee_mode):
 
             # perform tensorboard ops the operations, and write log
             summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
-            tensorboard_writer.add_summary(summary, i)
+            tensorboard_writer.add_summary(summary, data.epochs)
 
             # if acc > best_accuracy:
             #     best_accuracy = acc
