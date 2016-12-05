@@ -91,9 +91,6 @@ summary_op = tf.merge_all_summaries()
 sess.run(tf.initialize_all_variables())
 
 def train_mentee(mentee_mode):
-    # #TODO: please check if I initialize the weights for the mentee network the following line correctly -- not affecting the mentor network
-    # sess.run(tf.initialize_all_variables())
-    # mnist.train._index_in_epoch = 0 #re-read from the begining of the dataset
     output = []
     last_epoch = -1
     best_accuracy = 0.0
@@ -123,9 +120,7 @@ def train_mentee(mentee_mode):
         # Compute all needed gradients
         gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g, v in labels_grads_and_vars]
 
-        # compute all probe (w/o the softmax probe)
-        computed_probe_gradients = []
-        # compute all probe (w/o the softmax probe)
+        # compute all probes (w/o the softmax probe)
         computed_probe_gradients = []
         for j in range(len(probe_gradients)-1):
             probe_grad = []
@@ -175,37 +170,3 @@ def train_mentee(mentee_mode):
 
 print ("Running MNIST-"+str(subsample)+" with mode: " + mentee_mode)
 train_mentee(mentee_mode)
-
-# import sys
-# if __name__ == "__main__":
-#     if (len(sys.argv) < 3):
-#         p = 0
-#         mode = 'obedient'
-#     else:
-#         p = int(sys.argv[1])
-#         mode = sys.argv[2]
-#
-#     print ("Running MNIST-"+str(p)+" with mode: " + mode)
-#     train_mentee(p, mode)
-#
-    # for i in ("adamant", "obedient", "independent"):
-    #     output = []
-    #     file_name= (i + "_mentee_mode.txt")
-    #     print (file_name)
-    #     f = open(file_name, 'w')
-    #     f.write(("Parameters: \n"
-    #              + "num_epochs: 10" + ", batch_size: 50\n" ))
-    #
-    #
-    #
-    #     for j in ("mnist-1", "mnist-10", "mnist-50", "mnist-100", "mnist-250", "mnist-500"):
-    #
-    #         #mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
-    #         output= train_mentee(dataset_config=j, mentee_mode=i)
-    #         f.write(("\ndataset configuration: " + j + "\n"))
-    #         for line in output:
-    #             f.write(str(line))
-    #             f.write("\n")
-    #
-    #         #print ("The mentee accuracy for mentee mode: ", i, "and dataset configuration: ", j ," is : %", 100 * acc)
-    #     f.close()
