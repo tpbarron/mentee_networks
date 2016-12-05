@@ -51,5 +51,5 @@
 
 # rerunnign trying to get plots on same graph
 
-42: new mentor benchmark with only 1 hidden layer
-43: new mentor benchmark with only 1 hidden layer
+42: new mentor benchmark with only 1 hidden layer 5x5 convs
+43: new mentor benchmark with only 1 hidden layer 3x3 convs

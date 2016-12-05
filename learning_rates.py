@@ -2,8 +2,8 @@ from __future__ import division  # which forces / to adopt Python 3.x's behavior
 import matplotlib.pyplot as plt
 
 scaler = 1
-num_epochs_to_learn_representation = 10*scaler
-convergence = 30*scaler
+convergence = 15*scaler
+num_epochs_to_learn_representation = 0.6667*convergence
 
 
 # this is the learning rate (a funtion of iteration). Later i shold be the epoch
@@ -12,12 +12,14 @@ convergence = 30*scaler
 
 def compute_n(i):
     n = 0.001
+    # n = 0
     if i < convergence:
         n = 0.01 - (0.005 * i / convergence)
     return n
 
 
 def compute_eta_alpha(i, mode):
+    alpha = 0.001
     alpha = 0
     # obedient
     if mode == "obedient":
@@ -40,11 +42,15 @@ def compute_eta_alpha(i, mode):
     elif mode == "independent":
         alpha = 0.005 + (float(i / num_epochs_to_learn_representation) * 0.015)
 
+    elif mode == "unsupervised":
+        alpha = 0
+
     return alpha
 
 
 def compute_eta_beta(i, mode):
     # obedient
+    beta = 0.001
     beta = 0
     if mode == "obedient":
         if i < convergence:
@@ -57,11 +63,19 @@ def compute_eta_beta(i, mode):
     # independent
     elif mode == "independent":
         beta = 0
+
+    elif mode == "unsupervised":
+        if i < convergence:
+            beta = 0.04 - (i / convergence) * 0.035
+
+        # beta *= 5
+
     return beta
 
 
 def compute_eta_gamma(i, mode):
     # obedient
+    gamma = 0.001
     gamma = 0
     if mode == "obedient":
         if i < convergence:
@@ -74,9 +88,16 @@ def compute_eta_gamma(i, mode):
             gamma = 0.005 - (i / (num_epochs_to_learn_representation)) * 0.005
             if gamma < 0:
                 gamma = 0
-    # independent
+
     elif mode == "independent":
-        gamma=0
+        gamma = 0
+
+    elif mode == "unsupervised":
+        if i < convergence:
+            gamma = 0.01 - (i / (num_epochs_to_learn_representation)) * 0.01
+            if gamma < 0:
+                gamma = 0
+        # gamma *= 5
 
     return gamma
 

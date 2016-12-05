@@ -82,10 +82,17 @@ acc_value_mentor = categorical_accuracy(models.labels, mentor_preds)
 acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 # create a summary for our mentee accuracy
-direc = 'logs/' + mentee_mode + '_logs/'
-count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
-log_dir = os.path.join(direc, mentee_mode+str(subsample))
+# NOTE: this creates nice folders, but doesn't check for already existing paths
+# direc = 'logs/' + mentee_mode + '_logs/'
+# count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
+# log_dir = os.path.join(direc, mentee_mode+str(subsample))
+
+# this simply increments to next folder
+count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
+log_dir = os.path.join('logs/', str(count))
 os.mkdir(log_dir)
+
+# create a summary for our mentee accuracy
 tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
 tf.scalar_summary(summary_name, acc_value_mentee)
 summary_op = tf.merge_all_summaries()
@@ -97,9 +104,13 @@ def train_mentee(mentee_mode):
     last_epoch = -1
     best_accuracy = 0.0
     i = 0
+
+    tX = dataset.test.images[0:1000]
+    ty = dataset.test.labels[0:1000]
     while data.epochs < num_epochs:
+        batch = data.next_batch()
         if data.epochs > last_epoch:
-            acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
+            acc = sess.run(acc_value_mentee, feed_dict={img_input: tX, models.labels: ty})
             output.append("epoch: "+ str(data.epochs) + " of " + str(num_epochs) + ", accuracy: " + str(acc))
 
             # perform tensorboard ops the operations, and write log
@@ -110,10 +121,13 @@ def train_mentee(mentee_mode):
                 best_accuracy = acc
                 mentee_model.save(model_save_name)
 
+            acc_train = sess.run(acc_value_mentee, feed_dict={img_input: batch[0], models.labels: batch[1]})
+            acc_val = sess.run(acc_value_mentee, feed_dict={img_input: dataset.validation.images, models.labels: dataset.validation.labels})
+            print ("Training accuracy: ", acc_train, acc_val)
             last_epoch = data.epochs
             print ("Epoch: " + str(last_epoch) + " of " + str(num_epochs) + ", accuracy: " + str(acc))
 
-        batch = data.next_batch()
+        # batch = data.next_batch()
 
         # Compute all needed gradients
         gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g, v in labels_grads_and_vars]
@@ -138,6 +152,7 @@ def train_mentee(mentee_mode):
         a = learning_rates.compute_eta_alpha(data.epochs, mentee_mode)*1.0/n
         b = learning_rates.compute_eta_beta(data.epochs, mentee_mode)*1.0/n
         g = learning_rates.compute_eta_gamma(data.epochs, mentee_mode)*1.0/n
+        print ("alhpa: ", n, a, b, g)
 
         for j in range(len(gradients)):
             # set gradients for variable j
@@ -152,6 +167,8 @@ def train_mentee(mentee_mode):
             # add the output softmax probe
             gradients[j] += g*computed_probe_out_gradients[j]
 
+
+        # print (gradients[j])
         # apply grads
         grads_n_vars = [(gradients[x], labels_grads_and_vars[x][1]) for x in range(len(labels_grads_and_vars))]
         sess.run(opt.apply_gradients(grads_n_vars), feed_dict={learning_rate: n})
@@ -169,3 +186,4 @@ def train_mentee(mentee_mode):
 
 print ("Running MNIST-"+str(subsample)+" with mode: " + mentee_mode)
 train_mentee(mentee_mode)
+print ("Logged to: " + str(log_dir))

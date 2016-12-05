@@ -87,3 +87,4 @@ with sess.as_default():
     if final_acc > best_accuracy:
         mentor_model.save(model_save_name)
     print ("Final accurach: " + str(final_acc))
+    print ("Logged to: " + str(log_dir))
