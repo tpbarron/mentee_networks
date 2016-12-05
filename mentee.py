@@ -51,7 +51,7 @@ else:
 
 mentee_preds = mentee_model.output
 
-run_name = mentee_mode + "_mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10") + ("_" + str(subsample) if subsample is not None else "")
+run_name = "mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10") #+ ("_" + str(subsample) if subsample is not None else "")
 summary_name = run_name + "_accuracy"
 model_save_name = run_name + ".h5"
 data = data_abstraction.DataAbstration(dataset, batch_size, subsample)
@@ -81,8 +81,9 @@ acc_value_mentor = categorical_accuracy(models.labels, mentor_preds)
 acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 # create a summary for our mentee accuracy
-count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
-log_dir = os.path.join('logs/', str(count))
+direc = mentee_mode + '_logs/'
+count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
+log_dir = os.path.join(direc, mentee_mode+str(subsample))
 os.mkdir(log_dir)
 tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
 tf.scalar_summary(summary_name, acc_value_mentee)
@@ -104,9 +105,9 @@ def train_mentee(mentee_mode):
             summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
             tensorboard_writer.add_summary(summary, i)
 
-            if acc > best_accuracy:
-                best_accuracy = acc
-                mentee_model.save(model_save_name)
+            # if acc > best_accuracy:
+            #     best_accuracy = acc
+            #     mentee_model.save(model_save_name)
 
             last_epoch = data.epochs
             print ("Step: ", last_epoch, acc)
@@ -163,8 +164,8 @@ def train_mentee(mentee_mode):
     acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images,
                                     models.labels: dataset.test.labels})
     output.append("epoch: " + str(data.epochs+1) + ", accuracy: " + str(acc))
-    if acc > best_accuracy:
-        mentee_model.save(model_save_name)
+    # if acc > best_accuracy:
+    #     mentee_model.save(model_save_name)
 
     return output
 
