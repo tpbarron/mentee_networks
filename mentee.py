@@ -34,7 +34,7 @@ temperature = 0.9
 # the output probe does not need to be specified
 probes = [
     (0, 0),
-    (1, 1)
+    # (1, 1)
 ]
 
 USE_CONV = True
@@ -51,7 +51,8 @@ else:
 
 mentee_preds = mentee_model.output
 
-run_name = "mentee" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10") #+ ("_" + str(subsample) if subsample is not None else "")
+# run_name = "mentee" +
+run_name = ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10") #+ ("_" + str(subsample) if subsample is not None else "")
 summary_name = run_name + "_accuracy"
 model_save_name = run_name + ".h5"
 data = data_abstraction.DataAbstration(dataset, batch_size, subsample)

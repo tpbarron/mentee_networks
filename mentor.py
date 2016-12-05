@@ -25,9 +25,10 @@ else:
     mentor_model = models.build_mentor_model_conv_cifar10()
     img_input = models.img_cifar
 
-run_name = "mentor" + ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
+# run_name = "mentor" +
+run_name = ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
 summary_name = run_name + "_accuracy"
-model_save_name = run_name + ".h5"
+model_save_name = "mentor_" + run_name + ".h5"
 
 mentor_preds = mentor_model.output
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))
