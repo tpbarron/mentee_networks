@@ -95,7 +95,7 @@ def plot_learning_rates():
     beta_list_adamant = []
     gamma_list_adamant = []
 
-    for i in range(1000):
+    for i in range(100):
         n = compute_n(i)
         alpha = compute_eta_alpha(i, 'obedient')
         beta = compute_eta_beta(i, 'obedient')

@@ -67,9 +67,7 @@ with sess.as_default():
             summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
             tensorboard_writer.add_summary(summary, last_epoch) # i * batch_size is num samples seen #dataset.train.epochs_completed)
 
-            # i = 0
-            print ("Step: ", last_epoch, acc)
-
+            print ("Epoch: " + str(last_epoch) + " of " + str(max_epochs) + ", accuracy: " + str(acc))
 
         # # # perform tensorboard ops the operations, and write log
         # summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
@@ -85,7 +83,6 @@ with sess.as_default():
 
     final_acc = acc_value.eval(feed_dict={img_input: dataset.test.images,
                                     models.labels: dataset.test.labels})
-    print (final_acc)
-
     if final_acc > best_accuracy:
         mentor_model.save(model_save_name)
+    print ("Final accurach: " + str(final_acc))

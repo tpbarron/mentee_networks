@@ -99,24 +99,20 @@ def train_mentee(mentee_mode):
     while data.epochs < num_epochs:
         if data.epochs > last_epoch:
             acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
-            output.append("epoch: "+ str(data.epochs) + ", accuracy: " + str(acc))
+            output.append("epoch: "+ str(data.epochs) + " of " + str(num_epochs) + ", accuracy: " + str(acc))
 
             # perform tensorboard ops the operations, and write log
             summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
             tensorboard_writer.add_summary(summary, data.epochs)
 
-            # if acc > best_accuracy:
-            #     best_accuracy = acc
-            #     mentee_model.save(model_save_name)
+            if acc > best_accuracy:
+                best_accuracy = acc
+                mentee_model.save(model_save_name)
 
             last_epoch = data.epochs
-            print ("Step: ", last_epoch, acc)
+            print ("Epoch: " + str(last_epoch) + " of " + str(num_epochs) + ", accuracy: " + str(acc))
 
         batch = data.next_batch()
-
-        # # perform tensorboard ops the operations, and write log
-        # summary = sess.run(summary_op, feed_dict={img_input: dataset.test.images, models.labels: dataset.test.labels})
-        # tensorboard_writer.add_summary(summary, i)
 
         # Compute all needed gradients
         gradients = [sess.run(g, feed_dict={img_input: batch[0], models.labels: batch[1]}) for g, v in labels_grads_and_vars]
@@ -164,8 +160,9 @@ def train_mentee(mentee_mode):
     acc = sess.run(acc_value_mentee, feed_dict={img_input: dataset.test.images,
                                     models.labels: dataset.test.labels})
     output.append("epoch: " + str(data.epochs+1) + ", accuracy: " + str(acc))
-    # if acc > best_accuracy:
-    #     mentee_model.save(model_save_name)
+    if acc > best_accuracy:
+        mentee_model.save(model_save_name)
+    print ("Final accuracy: " + str(acc))
 
     return output
 
