@@ -1,3 +1,9 @@
+Dependencies:
+  tensorflow: https://www.tensorflow.org/versions/r0.12/get_started/os_setup.html
+  keras: https://keras.io/#installation
+  * Be sure that Keras is set to use tensorflow and the dim ordering is tf.
+
+  
 To run mentor:
 
   python mentor.py
