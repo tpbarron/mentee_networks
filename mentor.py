@@ -17,6 +17,7 @@ USE_CONV = True
 MNIST = True # True for MNIST, False for CIFAR-10
 
 if (MNIST):
+    print ("Downloading MNIST if first run")
     dataset = mnist_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_CONV))
     mentor_model = models.build_mentor_model_conv() if USE_CONV else models.build_mentor_model()
     img_input = models.img_conv if USE_CONV else models.img_dense
@@ -28,7 +29,7 @@ else:
 # run_name = "mentor" +
 run_name = ("_conv" if USE_CONV else "") + ("_mnist" if MNIST else "_cifar10")
 summary_name = run_name + "_accuracy"
-model_save_name = "mentor_" + run_name + ".h5"
+model_save_name = "mentor" + run_name + ".h5"
 
 mentor_preds = mentor_model.output
 loss = tf.reduce_mean(categorical_crossentropy(models.labels, mentor_preds))

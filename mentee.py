@@ -41,6 +41,7 @@ USE_CONV = True
 MNIST = True # True for MNIST, False for CIFAR-10
 
 if (MNIST):
+    print ("Downloading MNIST if first run")
     dataset = mnist_data.read_data_sets('MNIST_data', one_hot=True, reshape=(not USE_CONV))
     mentee_model = models.build_mentee_model_conv() if USE_CONV else models.build_mentee_model()
     img_input = models.img_conv if USE_CONV else models.img_dense
@@ -83,14 +84,14 @@ acc_value_mentee = categorical_accuracy(models.labels, mentee_preds)
 
 # create a summary for our mentee accuracy
 # NOTE: this creates nice folders, but doesn't check for already existing paths
-# direc = 'logs/' + mentee_mode + '_logs/'
-# count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
-# log_dir = os.path.join(direc, mentee_mode+str(subsample))
+direc = 'logs/' + mentee_mode + '_logs/'
+count = len([d for d in os.listdir(direc) if os.path.isdir(os.path.join(direc, d))])+1
+log_dir = os.path.join(direc, mentee_mode+str(subsample))
 
 # this simply increments to next folder
-count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
-log_dir = os.path.join('logs/', str(count))
-os.mkdir(log_dir)
+# count = len([d for d in os.listdir('logs/') if os.path.isdir(os.path.join('logs/', d))])+1
+# log_dir = os.path.join('logs/', str(count))
+# os.mkdir(log_dir)
 
 # create a summary for our mentee accuracy
 tensorboard_writer = tf.train.SummaryWriter(log_dir, graph=tf.get_default_graph())
@@ -121,9 +122,9 @@ def train_mentee(mentee_mode):
                 best_accuracy = acc
                 mentee_model.save(model_save_name)
 
-            acc_train = sess.run(acc_value_mentee, feed_dict={img_input: batch[0], models.labels: batch[1]})
-            acc_val = sess.run(acc_value_mentee, feed_dict={img_input: dataset.validation.images, models.labels: dataset.validation.labels})
-            print ("Training accuracy: ", acc_train, acc_val)
+            # acc_train = sess.run(acc_value_mentee, feed_dict={img_input: batch[0], models.labels: batch[1]})
+            # acc_val = sess.run(acc_value_mentee, feed_dict={img_input: dataset.validation.images, models.labels: dataset.validation.labels})
+            # print ("Training accuracy: ", acc_train, acc_val)
             last_epoch = data.epochs
             print ("Epoch: " + str(last_epoch) + " of " + str(num_epochs) + ", accuracy: " + str(acc))
 

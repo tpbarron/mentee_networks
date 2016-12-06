@@ -53,3 +53,5 @@
 
 42: new mentor benchmark with only 1 hidden layer 5x5 convs
 43: new mentor benchmark with only 1 hidden layer 3x3 convs
+
+44 - 89: Some random runs trying to debug
