@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 scaler = 1
 convergence = 15*scaler
 num_epochs_to_learn_representation = 0.6667*convergence
-
+thresh = 0.001
 
 # this is the learning rate (a funtion of iteration). Later i shold be the epoch
 # and we need to sample the training datasets p in {500, 250, 100, 50, 10, 1} and
 # traing mentee on every settings.
 
 def compute_n(i):
-    n = 0.001
+    n = thresh
     # n = 0
     if i < convergence:
         n = 0.01 - (0.005 * i / convergence)
@@ -19,8 +19,7 @@ def compute_n(i):
 
 
 def compute_eta_alpha(i, mode):
-    alpha = 0.001
-    alpha = 0
+    alpha = thresh
     # obedient
     if mode == "obedient":
         if i < num_epochs_to_learn_representation:
@@ -50,8 +49,7 @@ def compute_eta_alpha(i, mode):
 
 def compute_eta_beta(i, mode):
     # obedient
-    beta = 0.001
-    beta = 0
+    beta = thresh
     if mode == "obedient":
         if i < convergence:
             beta = 0.04 - (i / convergence) * 0.035
@@ -75,19 +73,18 @@ def compute_eta_beta(i, mode):
 
 def compute_eta_gamma(i, mode):
     # obedient
-    gamma = 0.001
-    gamma = 0
+    gamma = thresh
     if mode == "obedient":
         if i < convergence:
             gamma = 0.01 - (i / (num_epochs_to_learn_representation)) * 0.01
-            if gamma < 0:
-                gamma = 0
+            if gamma < thresh:
+                gamma = thresh
     # adamant
     elif mode == "adamant":
         if i < convergence:
             gamma = 0.005 - (i / (num_epochs_to_learn_representation)) * 0.005
-            if gamma < 0:
-                gamma = 0
+            if gamma < thresh:
+                gamma = thresh
 
     elif mode == "independent":
         gamma = 0
@@ -95,9 +92,8 @@ def compute_eta_gamma(i, mode):
     elif mode == "unsupervised":
         if i < convergence:
             gamma = 0.01 - (i / (num_epochs_to_learn_representation)) * 0.01
-            if gamma < 0:
-                gamma = 0
-        # gamma *= 5
+            if gamma < thresh:
+                gamma = thresh
 
     return gamma
 
@@ -116,7 +112,7 @@ def plot_learning_rates():
     beta_list_adamant = []
     gamma_list_adamant = []
 
-    for i in range(100):
+    for i in range(30):
         n = compute_n(i)
         alpha = compute_eta_alpha(i, 'obedient')
         beta = compute_eta_beta(i, 'obedient')
@@ -127,7 +123,7 @@ def plot_learning_rates():
         beta_list_obedient.append(beta)
         gamma_list_obedient.append(gamma)
 
-        n_list.append(n)
+        # n_list.append(n)
         alpha_list_adamant.append(compute_eta_alpha(i, 'adamant'))
         beta_list_adamant.append(compute_eta_beta(i, 'adamant'))
         gamma_list_adamant.append(compute_eta_gamma(i, 'adamant'))

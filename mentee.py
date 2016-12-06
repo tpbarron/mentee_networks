@@ -105,8 +105,8 @@ def train_mentee(mentee_mode):
     best_accuracy = 0.0
     i = 0
 
-    tX = dataset.test.images[0:1000]
-    ty = dataset.test.labels[0:1000]
+    tX = dataset.test.images #[0:1000]
+    ty = dataset.test.labels #[0:1000]
     while data.epochs < num_epochs:
         batch = data.next_batch()
         if data.epochs > last_epoch:
@@ -152,7 +152,7 @@ def train_mentee(mentee_mode):
         a = learning_rates.compute_eta_alpha(data.epochs, mentee_mode)*1.0/n
         b = learning_rates.compute_eta_beta(data.epochs, mentee_mode)*1.0/n
         g = learning_rates.compute_eta_gamma(data.epochs, mentee_mode)*1.0/n
-        print ("alhpa: ", n, a, b, g)
+        # print ("alhpa: ", n, a, b, g)
 
         for j in range(len(gradients)):
             # set gradients for variable j
